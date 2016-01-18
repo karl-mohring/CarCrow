@@ -18,5 +18,5 @@ def build_file_list(file_path):
 file_list = build_file_list(PATH)
 print file_list
 
-check_output("ffmpeg -i {0} -r 5 {1}\Output\\{2}%04d.jpg".format(file_list[0], os.path.split(file_list[0])[0], os.path.split(file_list[0])[-1].split('.')[0]), shell=True)
+check_output("ffmpeg -i '{0}' -r 5 {1}\Output\\{2}%04d.jpg".format(file_list[0], os.path.split(file_list[0])[0], os.path.split(file_list[0])[-1].split('.')[0]), shell=True)
 

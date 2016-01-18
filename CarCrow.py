@@ -18,7 +18,7 @@ def build_file_list(file_path):
 
 
 def split_next_video(file_path, output_path):
-    check_output("ffmpeg -i {0} -r 5 {1}\{2}%04d.jpg".format(file_path, os.path.split(output_path)[0], os.path.split(file_path)[-1].split('.')[0]), shell=True)
+    check_output("ffmpeg -i \"{0}\" -r 5 \"{1}\{2}%04d.jpg\"".format(file_path, os.path.split(output_path)[0], os.path.split(file_path)[-1].split('.')[0]), shell=True)
 
 
 def get_traffic_features(before_image,
@@ -100,7 +100,7 @@ def find_traffic(images, timestamp=datetime.datetime.now(), output_path="", outp
             time_since_last_detection = time_since_last_detection.total_seconds()
 
             # Cooldown to block repeat detections (centroid tends to bounce)
-            if time_since_last_detection > 1.5:
+            if time_since_last_detection > DETECTION_COOLDOWN:
                 total_detections += 1
                 last_detection_time = timestamp
 
@@ -123,7 +123,12 @@ def find_traffic(images, timestamp=datetime.datetime.now(), output_path="", outp
 
 if __name__ == '__main__':
 
+    # Find video list and print to confirm numbers/order
     videos = build_file_list(VIDEO_PATH)
+    for video in videos:
+        print video
+    print "{} videos found".format(len(videos))
+
     start_time = datetime.datetime.strptime(START_TIME, "%Y-%m-%d %H:%M:%S")
 
     for video in videos:
@@ -137,7 +142,7 @@ if __name__ == '__main__':
         find_traffic(image_set, timestamp=start_time, output_path=OUTPUT_FOLDER)
 
         # Update starting time
-        start_time += datetime.timedelta(seconds=len(image_set)/FRAME_RATE)
+        start_time += datetime.timedelta(seconds=(len(image_set) / FRAME_RATE) - 1)
 
         # Clear folder
         for f in image_set:

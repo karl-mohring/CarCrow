@@ -1,6 +1,6 @@
-VIDEO_PATH = "E:\Dropbox\Traffic Cam\/"
-TEMP_FOLDER = "E:\TEMP\/"
-OUTPUT_FOLDER = "E:\Downloads\Crow\/"
+VIDEO_PATH = "E:\Dropbox\TrafficCam\\"
+TEMP_FOLDER = "E:\TEMP\\"
+OUTPUT_FOLDER = "E:\Downloads\Crow\\"
 
 EXTENSION = "*.jpg"
 LOG_FILENAME = "TrafficLog.csv"
@@ -11,6 +11,8 @@ ERODE_ITERATIONS = 3
 DILATE_ITERATIONS = 40
 SMOOTHING_APERTURE = (19, 19)
 MIN_BLOB_SIZE = 30
+
+DETECTION_COOLDOWN = 1.5 # Minimum time between detections in seconds
 
 FRAME_RATE = 5  # frames per second
 
