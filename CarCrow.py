@@ -1,9 +1,7 @@
 import datetime
-from crow_config import *
-from SimpleCV import *
-import os
-import re
 from subprocess import check_output
+from SimpleCV import *
+from crow_config import *
 
 
 def build_file_list(file_path):
@@ -19,6 +17,50 @@ def build_file_list(file_path):
 
 def split_next_video(file_path, output_path):
     check_output("ffmpeg -i \"{0}\" -r 5 \"{1}\{2}%04d.jpg\"".format(file_path, os.path.split(output_path)[0], os.path.split(file_path)[-1].split('.')[0]), shell=True)
+
+
+def get_bounding_box(image):
+    """
+    Get a user-defined bounding box chosen from a given image
+    :param image: Input image that is displayed
+    :return: list containing x, y, w,h of the bounding box
+    """
+
+    disp = Display(resolution=image.size())
+    image.drawText(text="Drag a bounding box", x=0, y=0, color=Color.HOTPINK, fontsize=20)
+    image.save(disp)
+
+    up = None
+    down = None
+    bb = None
+
+    while disp.isNotDone():
+
+        # Start of bounding box
+        if disp.leftButtonDown:
+            up = None
+            down = disp.leftButtonDownPosition()
+
+        # End of bounding box
+        if disp.leftButtonUp:
+            up = disp.leftButtonUpPosition()
+
+        # If the box has been defined, draw it
+        if up is not None and down is not None:
+            bb = disp.pointsToBoundingBox(up, down)
+            image.clearLayers()
+            image.drawText(text="Drag again or right click to accept", x=0, y=0, color=Color.HOTPINK, fontsize=20)
+            image.drawRectangle(bb[0], bb[1], bb[2], bb[3])
+            image.save(disp)
+
+        # Exit if the box is accepted
+        if disp.rightButtonDown:
+            if bb is not None:
+                disp.done = True
+
+    disp.quit()
+
+    return bb
 
 
 def get_traffic_features(before_image,
@@ -57,11 +99,16 @@ def get_traffic_features(before_image,
     return detect_image.findBlobs(minsize=blob_min)  # Detect and sort out blobs
 
 
-def find_traffic(images, timestamp=datetime.datetime.now(), output_path="", output_images=True, output_log=True):
+def find_traffic(images, timestamp=datetime.datetime.now(), output_path="", detection_area=(0,0,0,0), output_images=True, output_log=True):
     last_image = Image(images[0])
     last_detections = 0
     total_detections = 0
     last_detection_time = timestamp
+
+    detect_xmin = detection_area[0]
+    detect_xmax = detect_xmin + detection_area[2]
+    detect_ymin = detection_area[1]
+    detect_ymax = detect_ymin + detection_area[3]
 
     for image in images:
         num_detections = 0
@@ -74,9 +121,7 @@ def find_traffic(images, timestamp=datetime.datetime.now(), output_path="", outp
                                         blob_min=MIN_BLOB_SIZE)
 
         # Draw bounding rectangle for detection area
-        next_image.drawRectangle((next_image.width / 2) - 75, (next_image.height / 2) - 50, 150, 150,
-                                 color=Color.VIOLET, width=2)
-        next_image.drawRectangle(x=0, y=450, w=200, h=30, color=Color.RED)
+        next_image.drawRectangle(detection_area[0], detection_area[1], detection_area[2], detection_area[3], color=Color.VIOLET, width=2)
 
         if features is not None:
 
@@ -85,9 +130,10 @@ def find_traffic(images, timestamp=datetime.datetime.now(), output_path="", outp
                 detection_colour = Color.RED
 
                 # Paint the blob box green if in the detection area
-                if abs(blob.x - next_image.width / 2) < 75 and abs(blob.y - next_image.height / 2) < 100:
-                    detection_colour = Color.FORESTGREEN
-                    num_detections += 1
+                if detect_xmin <= blob.x <= detect_xmax:
+                    if detect_ymin <= blob.y <= detect_ymax:
+                        detection_colour = Color.FORESTGREEN
+                        num_detections += 1
 
                 # Draw the blob box and centroid
                 next_image.drawRectangle(blob.x - (blob.width() / 2), blob.y - (blob.height() / 2), blob.width(),
@@ -131,6 +177,9 @@ if __name__ == '__main__':
 
     start_time = datetime.datetime.strptime(START_TIME, "%Y-%m-%d %H:%M:%S")
 
+    first_video = True
+    bounding_box = None
+
     for video in videos:
         split_next_video(video, TEMP_FOLDER)
 
@@ -139,7 +188,13 @@ if __name__ == '__main__':
         directory = os.path.join(TEMP_FOLDER, EXTENSION)
         image_set = glob.glob(directory)
 
-        find_traffic(image_set, timestamp=start_time, output_path=OUTPUT_FOLDER)
+        if first_video:
+            sample_image = Image(image_set[len(image_set)/2])
+            bounding_box = get_bounding_box(sample_image)
+            print bounding_box
+            first_video = False
+
+        find_traffic(image_set, timestamp=start_time, output_path=OUTPUT_FOLDER, detection_area=bounding_box)
 
         # Update starting time
         start_time += datetime.timedelta(seconds=(len(image_set) / FRAME_RATE) - 1)

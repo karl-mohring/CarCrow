@@ -1,4 +1,4 @@
-VIDEO_PATH = "E:\Dropbox\TrafficCam\\"
+VIDEO_PATH = "E:\Downloads\New folder\\"
 TEMP_FOLDER = "E:\TEMP\\"
 OUTPUT_FOLDER = "E:\Downloads\Crow\\"
 
@@ -17,5 +17,5 @@ DETECTION_COOLDOWN = 1.5 # Minimum time between detections in seconds
 FRAME_RATE = 5  # frames per second
 
 #
-START_TIME = "2015-10-08 8:24:07"
+START_TIME = "2015-10-08 9:55:05"
 
